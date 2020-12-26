@@ -1,35 +1,30 @@
 import numpy as np
 from keras.models import load_model
-from keras.models import Sequential
-from keras.utils import to_categorical
 import pickle
 
-from vocab import Vocabulary
 
-
-def generate(model, vocab, prefix='A'):
+def generate(model, word2index, index2word, prefix='A'):
     if isinstance(model, str):
-        model: Sequential = load_model(model)
-    if isinstance(vocab, str):
-        vocab: Vocabulary = pickle.load(open(vocab, 'rb'))
+        model = load_model(model)
+    if isinstance(word2index, str):
+        word2index = pickle.load(open(word2index, 'rb'))
+    if isinstance(index2word, str):
+        index2word = pickle.load(open(index2word, 'rb'))
 
-    sentence = [1, vocab.word2index(prefix)]
-    for token in sentence:
-        x = to_categorical(token, vocab.num_words)
-        pred = np.argmax(model.predict(x))
+    sentence = [word2index[prefix.lower()]]
+    for token in [0] + sentence:
+        pred = np.argmax(model.predict([token]))
     sentence.append(pred)
 
-    while True:
-        x = to_categorical(pred, vocab.num_words)
-        pred = np.argmax(model.predict(x))
+    while pred != 1:
+        pred = np.argmax(model.predict([pred.item()]))
         sentence.append(pred)
-        if pred == 2:
-            break
 
-    return ' '.join([vocab.index2word(token) for token in sentence])
+    return ' '.join([index2word[token] for token in sentence[:-1]])
 
 
 if __name__ == '__main__':
-    model = '3_LSTM_500.h5'
-    vocab = 'vocab.pickle'
-    print(generate(model, vocab))
+    model = 'model.h5'
+    word2index = 'word2index.pickle'
+    index2word = 'index2word.pickle'
+    print(generate(model, word2index, index2word))
