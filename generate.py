@@ -62,4 +62,4 @@ if __name__ == '__main__':
     model = 'model.h5'
     word2index = 'word2index.pickle'
     index2word = 'index2word.pickle'
-    print(generate(model, word2index, index2word, 'i'))
+    print(generate(model, word2index, index2word, 'i am'))
