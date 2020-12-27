@@ -1,11 +1,11 @@
 import numpy as np
-from keras.models import load_model, Sequential
+from keras.models import load_model
 import pickle
 
 
 def generate(model, word2index, index2word, method='beam_search', prefix='A'):
     if isinstance(model, str):
-        model: Sequential = load_model(model)
+        model = load_model(model)
     if isinstance(word2index, str):
         word2index = pickle.load(open(word2index, 'rb'))
     if isinstance(index2word, str):
@@ -50,15 +50,15 @@ def beam_search_decode(model, prefix, k=5):
             topk_probas.append(topk_prob)
 
         all_candidates = []
-        for (seq, score), topk_idx, topk_prob in zip(sequences, topk_indices, topk_probas):
+        for (tokens, score), topk_idx, topk_prob in zip(sequences, topk_indices, topk_probas):
             for idx, prob in zip(topk_idx, topk_prob):
                 if idx == 1:
-                    collected.append([seq, score])
+                    collected.append([tokens, score])
                     k -= 1
                     if k == 0:
                         return sorted(collected, key=lambda tup: tup[1])
                 else:
-                    all_candidates.append([seq + [int(idx)], score - np.log(prob)])
+                    all_candidates.append([tokens + [int(idx)], score - np.log(prob)])
         sequences = sorted(all_candidates, key=lambda tup: tup[1])[:k]
 
 
