@@ -11,9 +11,9 @@ from generate import generate
 
 
 def load_dataset(file):
-    df = pd.read_csv(file).dropna()
+    df = pd.read_csv(file)
 
-    sequences = df.body.drop_duplicates()
+    sequences = df.body.dropna().drop_duplicates()
     sequences = list(sequences.apply(lambda x: word_tokenize((str(x).lower()))))
 
     word_counts = {}
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     model.compile(loss='categorical_crossentropy')
     model.summary()
 
-    for epoch in range(6):
+    for epoch in range(3):
         for step, (x, y) in enumerate(zip(X, Y)):
             model.fit(x, y, batch_size=250, shuffle=False, verbose=0)
             # model.reset_states()
@@ -72,4 +72,4 @@ if __name__ == '__main__':
     pickle.dump(index2word, open('index2word.pickle', 'wb'))
     model.save('model.h5')
 
-    print(generate(model, word2index, index2word, 'The'))
+    print(generate(model, word2index, index2word, method='greedy', prefix='The'))
