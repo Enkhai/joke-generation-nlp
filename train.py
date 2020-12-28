@@ -1,10 +1,9 @@
 import pickle
 import numpy as np
 import pandas as pd
-from keras.preprocessing.sequence import pad_sequences
 from keras.utils import to_categorical
 from keras.models import Sequential
-from keras.layers import Embedding, LSTM, Dropout, Dense, Activation
+from keras.layers import Embedding, Bidirectional, LSTM, Dropout, Dense, Activation
 import nltk
 
 nltk.download('punkt')
@@ -12,15 +11,15 @@ from nltk.tokenize import word_tokenize
 from generate import generate
 
 
-def load_dataset(file):
+def load_dataset(file, max_sequence_len=20):
     df = pd.read_csv(file)
 
     sentences = df.body.dropna().drop_duplicates()
     sentences_words = list(sentences.apply(lambda x: word_tokenize((str(x).lower()))))
 
-    # sentences_words = [seq for seq in sentences_words if 200 < len(seq) < 350]
+    sentences_words = [seq for seq in sentences_words if max_sequence_len < len(seq)]
 
-    word2index = {'PAD': 0}
+    word2index = {}
     for seq in sentences_words:
         for word in seq:
             if word not in word2index:
@@ -30,31 +29,25 @@ def load_dataset(file):
     input_sequences = []
     for sent in sentences_words:
         sent_tokens = [word2index[word] for word in sent]
-        # for i in range(20, len(sent_tokens)):
-        for i in range(1, len(sent_tokens)):
-            input_sequences.append(sent_tokens[:i + 1])
+        for i in range(max_sequence_len, len(sent_tokens)):
+            input_sequences.append(sent_tokens[i - max_sequence_len:i])
 
-    max_sequence_len = max([len(x) for x in input_sequences])
-    input_sequences = np.array(pad_sequences(input_sequences, maxlen=max_sequence_len, padding='pre'))
+    input_sequences = np.array(input_sequences)
 
     X, Y = input_sequences[:, :-1], to_categorical(input_sequences[:, -1], len(word2index))
 
-    return X, Y, word2index, index2word, max_sequence_len
+    return X, Y, word2index, index2word
 
 
 if __name__ == '__main__':
-    # X, Y, word2index, index2word, max_len = load_dataset('data/dataset.csv')
-    X, Y, word2index, index2word, max_len = load_dataset('data/dataset1.csv')
+    max_len = 40
+    X, Y, word2index, index2word = load_dataset('data/dataset.csv', max_sequence_len=max_len)
 
     model = Sequential()
-    model.add(Embedding(len(word2index), 100, input_length=max_len - 1))
-    model.add(LSTM(500, return_sequences=True))
+    model.add(Embedding(len(word2index), 200, input_length=max_len - 1))
+    model.add(Bidirectional(LSTM(500, return_sequences=True)))
     model.add(Dropout(0.2))
-    model.add(LSTM(500, return_sequences=True))
-    model.add(Dropout(0.2))
-    model.add(LSTM(500, return_sequences=True))
-    model.add(Dropout(0.2))
-    model.add(LSTM(500))
+    model.add(Bidirectional(LSTM(500)))
     model.add(Dropout(0.2))
     model.add(Dense(len(word2index)))
     model.add(Activation('softmax'))
@@ -62,10 +55,11 @@ if __name__ == '__main__':
     model.compile(loss='categorical_crossentropy')
     model.summary()
 
-    model.fit(X, Y, epochs=100, batch_size=128)
+    model.fit(X, Y, epochs=20, batch_size=800)
 
     pickle.dump(word2index, open('word2index.pickle', 'wb'))
     pickle.dump(index2word, open('index2word.pickle', 'wb'))
     model.save('model.h5')
 
-    print(generate(model, word2index, index2word, 'The'))
+    seed_text = 'The man in the white suit tipped his hat. "Why do you keep looking at me like that?", he asked.'
+    print(generate(model, word2index, index2word, seed_text))
