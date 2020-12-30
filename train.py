@@ -1,65 +1,49 @@
 import pickle
-import numpy as np
-import pandas as pd
-from keras.utils import to_categorical
-from keras.models import Sequential
-from keras.layers import Embedding, Bidirectional, LSTM, Dropout, Dense, Activation
-import nltk
-
-nltk.download('punkt')
-from nltk.tokenize import word_tokenize
+from keras.models import Sequential, Model
+from keras.layers import Input, Embedding, Conv1D, LSTM, Dense, TimeDistributed, Activation
+from keras.backend import squeeze
 from generate import generate
+from preprocessing import load_dataset
+import os
+
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 
-def load_dataset(file, max_sequence_len=20):
-    df = pd.read_csv(file)
+def create_model(time_steps, vocab_size, q):
+    input_a = Input((time_steps, 7))
+    embedding = Embedding(vocab_size, q, input_length=time_steps)(input_a)
+    cnn = Sequential()
+    cnn.add(Conv1D(q, 2, name='conv1_2'))
+    cnn.add(Conv1D(q, 2, name='conv2_2'))
+    cnn.add(Conv1D(q, 3, name='conv3_3'))
+    cnn.add(Conv1D(q, 3, name='conv4_3'))
+    cnn = squeeze(cnn(embedding), 2)
+    rcm = LSTM(q, return_sequences=True)(cnn)
 
-    sentences = df.body.dropna().drop_duplicates()
-    sentences_words = list(sentences.apply(lambda x: word_tokenize((str(x).lower()))))
+    input_b = Input((time_steps, vocab_size))
+    prev_token_dense = TimeDistributed(Dense(q))(input_b)
+    rgm = LSTM(q)(rcm + prev_token_dense)
 
-    sentences_words = [seq for seq in sentences_words if max_sequence_len < len(seq)]
+    output = Activation('softmax')(Dense(vocab_size)(rgm))
 
-    word2index = {}
-    for seq in sentences_words:
-        for word in seq:
-            if word not in word2index:
-                word2index[word] = len(word2index)
-    index2word = {i: w for w, i in word2index.items()}
-
-    input_sequences = []
-    for sent in sentences_words:
-        sent_tokens = [word2index[word] for word in sent]
-        for i in range(max_sequence_len, len(sent_tokens)):
-            input_sequences.append(sent_tokens[i - max_sequence_len:i])
-
-    input_sequences = np.array(input_sequences)
-
-    X, Y = input_sequences[:, :-1], to_categorical(input_sequences[:, -1], len(word2index))
-
-    return X, Y, word2index, index2word
+    return Model(inputs=[input_a, input_b], outputs=output)
 
 
 if __name__ == '__main__':
-    max_len = 40
-    X, Y, word2index, index2word = load_dataset('data/dataset.csv', max_sequence_len=max_len)
+    steps = 20
+    X, prev, Y, word2index, index2word = load_dataset('data/dataset.csv', time_steps=steps)
 
-    model = Sequential()
-    model.add(Embedding(len(word2index), 200, input_length=max_len - 1))
-    model.add(Bidirectional(LSTM(500, return_sequences=True)))
-    model.add(Dropout(0.2))
-    model.add(Bidirectional(LSTM(500)))
-    model.add(Dropout(0.2))
-    model.add(Dense(len(word2index)))
-    model.add(Activation('softmax'))
+    model = create_model(steps, len(word2index), 200)
 
     model.compile(loss='categorical_crossentropy')
     model.summary()
 
-    model.fit(X, Y, epochs=20, batch_size=800)
+    model.fit([X, prev], Y, epochs=20)
 
     pickle.dump(word2index, open('word2index.pickle', 'wb'))
     pickle.dump(index2word, open('index2word.pickle', 'wb'))
     model.save('model.h5')
 
-    seed_text = 'The man in the white suit tipped his hat. "Why do you keep looking at me like that?", he asked.'
-    print(generate(model, word2index, index2word, seed_text))
+    seed_text = 'The man in the white shirt took off his watch. "Why do you keep looking at me like that?", he asked.'
+    suffix = ' ' + 'the'
+    print(generate(model, word2index, index2word, seed_text + ' the'))
