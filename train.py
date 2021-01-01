@@ -20,18 +20,19 @@ def load_dataset(file, max_sequence_len=20):
     sentences_words = [seq for seq in sentences_words if max_sequence_len < len(seq)]
 
     word2index = {}
+    index2word = {}
     for seq in sentences_words:
         for word in seq:
             if word not in word2index:
-                word2index[word] = len(word2index)
-    index2word = {i: w for w, i in word2index.items()}
+                i = len(word2index)
+                word2index[word] = i
+                index2word[i] = word
 
     input_sequences = []
     for sent in sentences_words:
         sent_tokens = [word2index[word] for word in sent]
         for i in range(max_sequence_len, len(sent_tokens)):
             input_sequences.append(sent_tokens[i - max_sequence_len:i])
-
     input_sequences = np.array(input_sequences)
 
     X, Y = input_sequences[:, :-1], to_categorical(input_sequences[:, -1], len(word2index))
@@ -55,11 +56,12 @@ if __name__ == '__main__':
     model.compile(loss='categorical_crossentropy')
     model.summary()
 
-    model.fit(X, Y, epochs=20, batch_size=800)
+    epochs = 10
+    model.fit(X, Y, epochs=epochs, batch_size=800)
 
     pickle.dump(word2index, open('word2index.pickle', 'wb'))
     pickle.dump(index2word, open('index2word.pickle', 'wb'))
-    model.save('model.h5')
+    model.save('epochs' + str(epochs) + 'seq' + str(max_len) + 'model.h5')
 
     seed_text = 'The man in the white suit tipped his hat. "Why do you keep looking at me like that?", he asked.'
-    print(generate(model, word2index, index2word, seed_text))
+    print(generate(model, word2index, index2word, seed_text, p=0.003))
