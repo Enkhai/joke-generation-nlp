@@ -19,7 +19,7 @@ def generate(model, word2index, index2word, seed_text, next_words=100, method='s
     seed_indices = [word2index[word] for word in word_tokenize(seed_text.lower())]
     if method == 'greedy':
         sentence = greedy_decode(model, seed_indices, max_len, next_words=next_words)
-    elif method == 'beam_search':
+    elif method == 'beam search':
         sentences = beam_search_decode(model, seed_indices, max_len, next_words, k)
         sentence = sentences[0][0]
     elif method == 'sample':
@@ -37,19 +37,19 @@ def greedy_decode(model, seed, max_sequence_length, next_words):
 def beam_search_decode(model, seed, max_sequence_length, next_words, k=8):
     sequences = [[seed, 0.0]]
     for _ in range(next_words):
-        topk_indices = []
-        topk_probas = []
+        top_k_indices = []
+        top_k_probas = []
         for seq in sequences:
             pred = model.predict([seq[0][-max_sequence_length:]])[0]
-            topk_idx = pred.argsort()[-k:][::-1]
-            topk_prob = pred[topk_idx]
+            top_k_idx = pred.argsort()[-k:][::-1]
+            top_k_prob = pred[top_k_idx]
 
-            topk_indices.append(topk_idx)
-            topk_probas.append(topk_prob)
+            top_k_indices.append(top_k_idx)
+            top_k_probas.append(top_k_prob)
 
         all_candidates = []
-        for (tokens, score), topk_idx, topk_prob in zip(sequences, topk_indices, topk_probas):
-            for idx, prob in zip(topk_idx, topk_prob):
+        for (tokens, score), top_k_idx, top_k_prob in zip(sequences, top_k_indices, top_k_probas):
+            for idx, prob in zip(top_k_idx, top_k_prob):
                 all_candidates.append([tokens + [int(idx)], score - np.log(prob)])
         sequences = sorted(all_candidates, key=lambda tup: tup[1])[:k]
     return sequences
@@ -64,11 +64,15 @@ def top_sampling(model, seed, max_sequence_length, next_words, p=0.0, k=0, tempe
 
 def sample(preds, temperature=1.0, p=0.0, k=0):
     if k > 0:
-        top_k_indices = preds.argsort()[-k:][::-1]
-        preds = preds[top_k_indices]
+        indices_to_remove = preds.argsort()[:-k][::-1]
+        preds[indices_to_remove] = -np.inf
     elif p > 0.0:
-        preds = preds[preds > p]
-    preds = np.log(preds) / temperature
+        indices_to_remove = np.argwhere(preds < p)
+        preds[indices_to_remove] = -np.inf
+    preds = preds / temperature
+    # resolves multinomial casting issue
+    # https://github.com/numpy/numpy/issues/8317
+    preds = preds.astype('float64')
     preds = np.exp(preds)
     preds = preds / np.sum(preds)
     probas = np.random.multinomial(1, preds, 1)
@@ -76,7 +80,7 @@ def sample(preds, temperature=1.0, p=0.0, k=0):
 
 
 if __name__ == '__main__':
-    model = 'epochs3seq40model.h5'
+    model = 'epochs23seq40model.h5'
     word2index = 'word2index.pickle'
     index2word = 'index2word.pickle'
 
@@ -84,5 +88,4 @@ if __name__ == '__main__':
     # seed_text = 'The man in the white suit tipped his hat. "Why do you keep looking at me like that?", he asked.'
     # seed_text = 'Three children were playing in the park. One of them got up and looked at the other two.'
     seed_text = "Once upon a time two guys were playing around with wires. Suddenly, one of them gets shocked."
-    # print(generate(model, word2index, index2word, seed_text, method='beam_search', k=8))
-    print(generate(model, word2index, index2word, seed_text, p=0.003))
+    print(generate(model, word2index, index2word, seed_text, p=0.005, temp=0.4))
