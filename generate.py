@@ -30,7 +30,7 @@ def generate(model, word2index, index2word, seed_text, next_words=100, method='s
 
 def greedy_decode(model, seed, max_sequence_length, next_words):
     for _ in range(next_words):
-        seed.append(np.argmax(model.predict([seed[-max_sequence_length:]])))
+        seed.append(int(np.argmax(model.predict([seed[-max_sequence_length:]]))))
     return seed
 
 
@@ -65,12 +65,13 @@ def top_sampling(model, seed, max_sequence_length, next_words, p=0.0, k=0, tempe
 def sample(preds, temperature=1.0, p=0.0, k=0):
     if k > 0:
         indices_to_remove = preds.argsort()[:-k][::-1]
-        preds[indices_to_remove] = -np.inf
+        preds[indices_to_remove] = 0
     elif p > 0.0:
         indices_to_remove = np.argwhere(preds < p)
-        preds[indices_to_remove] = -np.inf
-    preds = preds / temperature
-    # resolves multinomial casting issue
+        preds[indices_to_remove] = 0
+    # ignore divide by zero warning
+    preds = np.log(preds) / temperature
+    # addresses multinomial casting issue
     # https://github.com/numpy/numpy/issues/8317
     preds = preds.astype('float64')
     preds = np.exp(preds)
