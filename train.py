@@ -31,7 +31,7 @@ def load_dataset(file, max_sequence_len=20):
     input_sequences = []
     for sent in sentences_words:
         sent_tokens = [word2index[word] for word in sent]
-        for i in range(max_sequence_len, len(sent_tokens)):
+        for i in range(max_sequence_len, len(sent_tokens) + 1):
             input_sequences.append(sent_tokens[i - max_sequence_len:i])
     input_sequences = np.array(input_sequences)
 
