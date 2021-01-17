@@ -17,7 +17,17 @@ def load_dataset(file, max_sequence_len=20):
     sentences = df.body.dropna().drop_duplicates()
     sentences_words = list(sentences.apply(lambda x: word_tokenize((str(x).lower()))))
 
-    sentences_words = [seq for seq in sentences_words if max_sequence_len < len(seq)]
+    word_counts = {}
+    for sent in sentences_words:
+        for word in sent:
+            try:
+                word_counts[word] += 1
+            except KeyError:
+                word_counts[word] = 1
+
+    rare_words = [word for word, count in word_counts.items() if count < 2]
+    sentences_words = [seq for seq in sentences_words
+                       if len(seq) > max_sequence_len and set(seq).isdisjoint(rare_words)]
 
     word2index = {}
     index2word = {}
@@ -41,8 +51,8 @@ def load_dataset(file, max_sequence_len=20):
 
 
 if __name__ == '__main__':
-    max_len = 40
-    X, Y, word2index, index2word = load_dataset('data/dataset.csv', max_sequence_len=max_len)
+    max_len = 25
+    X, Y, word2index, index2word = load_dataset('data/wocka.csv', max_sequence_len=max_len)
 
     model = Sequential()
     model.add(Embedding(len(word2index), 200, input_length=max_len - 1))
@@ -56,12 +66,12 @@ if __name__ == '__main__':
     model.compile(loss='categorical_crossentropy')
     model.summary()
 
-    epochs = 10
+    epochs = 23
     model.fit(X, Y, epochs=epochs, batch_size=800)
 
     pickle.dump(word2index, open('word2index.pickle', 'wb'))
     pickle.dump(index2word, open('index2word.pickle', 'wb'))
     model.save('epochs' + str(epochs) + 'seq' + str(max_len) + 'model.h5')
 
-    seed_text = 'The man in the white suit tipped his hat. "Why do you keep looking at me like that?", he asked.'
+    seed_text = 'The man in the white suit lowered his hat. "Why do you keep looking at me like that?", he asked.'
     print(generate(model, word2index, index2word, seed_text, p=0.003))

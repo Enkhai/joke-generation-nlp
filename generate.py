@@ -81,12 +81,12 @@ def sample(preds, temperature=1.0, p=0.0, k=0):
 
 
 if __name__ == '__main__':
-    model = 'epochs23seq40model.h5'
+    model = 'epochs23seq25model.h5'
     word2index = 'word2index.pickle'
     index2word = 'index2word.pickle'
 
     # ignore input incompatible shape
-    # seed_text = 'The man in the white suit tipped his hat. "Why do you keep looking at me like that?", he asked.'
+    # seed_text = 'The man in the white suit lowered his hat. "Why do you keep looking at me like that?", he asked.'
     # seed_text = 'Three children were playing in the park. One of them got up and looked at the other two.'
     seed_text = "Once upon a time two guys were playing around with wires. Suddenly, one of them gets shocked."
-    print(generate(model, word2index, index2word, seed_text, p=0.005, temp=0.4))
+    print(generate(model, word2index, index2word, seed_text, p=0.003, temp=0.4))
