@@ -8,7 +8,7 @@ import nltk
 
 nltk.download('punkt')
 from nltk.tokenize import word_tokenize
-from generate import generate
+from generate import generateOnce
 
 
 def load_dataset(file, max_sequence_len=20):
@@ -74,4 +74,4 @@ if __name__ == '__main__':
     model.save('epochs' + str(epochs) + 'seq' + str(max_len) + 'model.h5')
 
     seed_text = 'The man in the white suit lowered his hat. "Why do you keep looking at me like that?", he asked.'
-    print(generate(model, word2index, index2word, seed_text, p=0.003))
+    print(generateOnce(model, word2index, index2word, seed_text, p=0.003))
