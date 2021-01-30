@@ -32,7 +32,7 @@ def batchGenerate(model, word2index, index2word, seed_df):
         row['output'] = ' '.join([index2word[token] for token in sentence])
         output_df = output_df.append(row)
 
-    output_df.to_csv('output.csv')
+    output_df.to_csv('GeneratedJokes.csv')
 
 def generateOnce(model, word2index, index2word, seed_text, next_words=100, method='sample', k=0, p=0.0, temp=1.0):
     if isinstance(model, str):
