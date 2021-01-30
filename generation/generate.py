@@ -7,7 +7,8 @@ import nltk
 nltk.download('punkt')
 from nltk.tokenize import word_tokenize
 
-def batchGenerate(model, word2index, index2word, seed_df):
+
+def batch_generate(model, word2index, index2word, seed_df):
     if isinstance(model, str):
         model = load_model(model)
     if isinstance(word2index, str):
@@ -34,7 +35,8 @@ def batchGenerate(model, word2index, index2word, seed_df):
 
     output_df.to_csv('GeneratedJokes.csv')
 
-def generateOnce(model, word2index, index2word, seed_text, next_words=100, method='sample', k=0, p=0.0, temp=1.0):
+
+def generate_once(model, word2index, index2word, seed_text, next_words=100, method='sample', k=0, p=0.0, temp=1.0):
     if isinstance(model, str):
         model = load_model(model)
     if isinstance(word2index, str):
@@ -118,4 +120,4 @@ if __name__ == '__main__':
     # seed_text = "Once upon a time two guys were playing around with wires. Suddenly, one of them gets shocked."
     # print(generateOnce(model, word2index, index2word, seed_text, p=0.003, temp=0.4))
 
-    batchGenerate(model, word2index, index2word, 'seed.csv')
+    batch_generate(model, word2index, index2word, 'seed.csv')
