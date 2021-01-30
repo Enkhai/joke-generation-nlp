@@ -23,7 +23,7 @@ jokesBody = []
 jokesCategory = []
 freq = {}
 
-with open("jokesAfterPreprocessing.csv", "r") as f:
+with open("../preprocessing/jokesAfterPreprocessing.csv", "r") as f:
     reader = csv.DictReader(f)
     jokes = list(reader)
 

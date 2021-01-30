@@ -8,7 +8,7 @@ import nltk
 
 nltk.download('punkt')
 from nltk.tokenize import word_tokenize
-from generate import generateOnce
+from generation.generate import generateOnce
 
 
 def load_dataset(file, max_sequence_len=20):
@@ -52,7 +52,7 @@ def load_dataset(file, max_sequence_len=20):
 
 if __name__ == '__main__':
     max_len = 25
-    X, Y, word2index, index2word = load_dataset('data/wocka.csv', max_sequence_len=max_len)
+    X, Y, word2index, index2word = load_dataset('../data/wocka.csv', max_sequence_len=max_len)
 
     model = Sequential()
     model.add(Embedding(len(word2index), 200, input_length=max_len - 1))

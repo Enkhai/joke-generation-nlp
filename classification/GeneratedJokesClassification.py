@@ -15,11 +15,11 @@ jokesBody = []
 jokesCategory = []
 GeneratedJokes = []
 
-with open("jokesAfterPreprocessing.csv", "r") as f:
+with open("../preprocessing/jokesAfterPreprocessing.csv", "r") as f:
     reader = csv.DictReader(f)
     jokes = list(reader)
 
-with open("GeneratedJokes.csv", "r") as f2:
+with open("../generation/GeneratedJokes.csv", "r") as f2:
     reader2 = csv.DictReader(f2)
     jokesToClassify = list(reader2)
 
