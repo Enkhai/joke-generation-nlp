@@ -1,5 +1,3 @@
-Mixoulis.txt -> O kwdikas wste na enwsw kai na meiwsw kathgories
-
 jokesAfterPreprocessing -> The final dataset after the preprocessing phase, which we use to train the joke generation and joke classification models.
 
 ModelsTraining_ClassificationTask.py -> The code which trains the classification models and saves the Logistic regression model.
